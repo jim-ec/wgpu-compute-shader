@@ -53,10 +53,21 @@ async fn main() {
 
     let storage_buffer = device.create_buffer(&BufferDescriptor {
         label: None,
-        mapped_at_creation: false,
-        size: 4,
+        mapped_at_creation: true,
+        size: std::mem::size_of::<i32>() as BufferAddress,
         usage: BufferUsages::STORAGE | BufferUsages::COPY_SRC,
     });
+
+    {
+        let input: i32 = 21;
+        println!("Input: {input}");
+        let mut mapping: BufferViewMut = storage_buffer.slice(..).get_mapped_range_mut();
+        for (i, byte) in input.to_ne_bytes().into_iter().enumerate() {
+            mapping[i] = byte;
+        }
+        drop(mapping);
+        storage_buffer.unmap();
+    }
 
     // We cannot map a storage buffer, thus we copy its contents into a readback buffer and map it instead.
     let readback_buffer = Arc::new(device.create_buffer(&BufferDescriptor {
@@ -105,6 +116,6 @@ async fn main() {
                 .map(|bytes| i32::from_ne_bytes(bytes.try_into().unwrap()))
                 .next()
                 .unwrap();
-            println!("{readback}");
+            println!("Output: {readback}");
         })
 }

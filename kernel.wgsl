@@ -3,5 +3,5 @@ var<storage, read_write> result: i32;
 
 @compute @workgroup_size(1)
 fn main() {
-    result = 42;
+    result *= 2;
 }

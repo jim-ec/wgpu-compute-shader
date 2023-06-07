@@ -1,0 +1,19 @@
+[package]
+name = "wgpu-computer-shader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.10"
+wgpu = "0.16"
+env_logger = "0.10"
+log = "0.4"
+bytemuck = { version = "1.13", features = ["derive"] }
+cgmath = "0.18"
+lerp = { version = "0.4.0", features = ["derive"] }
+rand = "0.8"
+common_macros = "0.1"
+derive_setters = "0.1"
+memoffset = "0.9"
+bitflags = "2.3"
+async-std = { version = "1.12.0", features = ["attributes"] }

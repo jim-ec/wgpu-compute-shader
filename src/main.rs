@@ -54,16 +54,18 @@ async fn main() {
     let storage_buffer = device.create_buffer(&BufferDescriptor {
         label: None,
         mapped_at_creation: true,
-        size: std::mem::size_of::<i32>() as BufferAddress,
+        size: 2 * std::mem::size_of::<i32>() as BufferAddress,
         usage: BufferUsages::STORAGE | BufferUsages::COPY_SRC,
     });
 
     {
-        let input: i32 = 21;
-        println!("Input: {input}");
+        let inputs: [i32; 2] = [21, 22];
+        println!("Input: {inputs:?}");
         let mut mapping: BufferViewMut = storage_buffer.slice(..).get_mapped_range_mut();
-        for (i, byte) in input.to_ne_bytes().into_iter().enumerate() {
-            mapping[i] = byte;
+        for (i, input) in inputs.into_iter().enumerate() {
+            for (j, byte) in input.to_ne_bytes().into_iter().enumerate() {
+                mapping[i * 4 + j] = byte;
+            }
         }
         drop(mapping);
         storage_buffer.unmap();
@@ -73,7 +75,7 @@ async fn main() {
     let readback_buffer = Arc::new(device.create_buffer(&BufferDescriptor {
         label: None,
         mapped_at_creation: false,
-        size: 4,
+        size: 8,
         usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
     }));
 
@@ -96,10 +98,10 @@ async fn main() {
         let mut pass = encoder.begin_compute_pass(&ComputePassDescriptor { label: None });
         pass.set_bind_group(0, &bind_group, &[]);
         pass.set_pipeline(&pipeline);
-        pass.dispatch_workgroups(1, 1, 1);
+        pass.dispatch_workgroups(2, 1, 1);
     }
 
-    encoder.copy_buffer_to_buffer(&storage_buffer, 0, &readback_buffer, 0, 4);
+    encoder.copy_buffer_to_buffer(&storage_buffer, 0, &readback_buffer, 0, 8);
 
     queue.submit(Some(encoder.finish()));
 
@@ -114,8 +116,7 @@ async fn main() {
             let readback = contents
                 .chunks_exact(std::mem::size_of::<i32>())
                 .map(|bytes| i32::from_ne_bytes(bytes.try_into().unwrap()))
-                .next()
-                .unwrap();
-            println!("Output: {readback}");
+                .collect::<Vec<_>>();
+            println!("Output: {readback:?}");
         })
 }

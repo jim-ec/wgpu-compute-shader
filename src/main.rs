@@ -1,6 +1,9 @@
 use std::{fs, num::NonZeroU64, sync::Arc};
+use rand::prelude::*;
 
 use wgpu::*;
+
+const BUFFER_LEN: usize = 2;
 
 #[async_std::main]
 async fn main() {
@@ -54,13 +57,13 @@ async fn main() {
     let storage_buffer = device.create_buffer(&BufferDescriptor {
         label: None,
         mapped_at_creation: true,
-        size: 2 * std::mem::size_of::<i32>() as BufferAddress,
+        size: BUFFER_LEN as u64 * std::mem::size_of::<i32>() as BufferAddress,
         usage: BufferUsages::STORAGE | BufferUsages::COPY_SRC,
     });
 
     {
-        let inputs: [i32; 2] = [21, 22];
-        println!("Input: {inputs:?}");
+        let inputs: [i32; BUFFER_LEN] = core::array::from_fn(|_| rand::thread_rng().gen_range(0..24));
+        println!("Input:  {inputs:?}");
         let mut mapping: BufferViewMut = storage_buffer.slice(..).get_mapped_range_mut();
         for (i, input) in inputs.into_iter().enumerate() {
             for (j, byte) in input.to_ne_bytes().into_iter().enumerate() {
@@ -75,7 +78,7 @@ async fn main() {
     let readback_buffer = Arc::new(device.create_buffer(&BufferDescriptor {
         label: None,
         mapped_at_creation: false,
-        size: 8,
+        size: BUFFER_LEN as u64 * 4,
         usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
     }));
 
@@ -98,10 +101,10 @@ async fn main() {
         let mut pass = encoder.begin_compute_pass(&ComputePassDescriptor { label: None });
         pass.set_bind_group(0, &bind_group, &[]);
         pass.set_pipeline(&pipeline);
-        pass.dispatch_workgroups(2, 1, 1);
+        pass.dispatch_workgroups(BUFFER_LEN as u32, 1, 1);
     }
 
-    encoder.copy_buffer_to_buffer(&storage_buffer, 0, &readback_buffer, 0, 8);
+    encoder.copy_buffer_to_buffer(&storage_buffer, 0, &readback_buffer, 0, 4 * BUFFER_LEN as u64);
 
     queue.submit(Some(encoder.finish()));
 

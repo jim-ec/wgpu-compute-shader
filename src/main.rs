@@ -1,5 +1,5 @@
-use std::{fs, num::NonZeroU64, sync::Arc};
 use rand::prelude::*;
+use std::{fs, num::NonZeroU64, sync::Arc};
 
 use wgpu::*;
 
@@ -62,7 +62,8 @@ async fn main() {
     });
 
     {
-        let inputs: [i32; BUFFER_LEN] = core::array::from_fn(|_| rand::thread_rng().gen_range(0..24));
+        let inputs: [i32; BUFFER_LEN] =
+            core::array::from_fn(|_| rand::thread_rng().gen_range(0..24));
         println!("Input:  {inputs:?}");
         let mut mapping: BufferViewMut = storage_buffer.slice(..).get_mapped_range_mut();
         for (i, input) in inputs.into_iter().enumerate() {
@@ -104,7 +105,13 @@ async fn main() {
         pass.dispatch_workgroups(BUFFER_LEN as u32, 1, 1);
     }
 
-    encoder.copy_buffer_to_buffer(&storage_buffer, 0, &readback_buffer, 0, 4 * BUFFER_LEN as u64);
+    encoder.copy_buffer_to_buffer(
+        &storage_buffer,
+        0,
+        &readback_buffer,
+        0,
+        4 * BUFFER_LEN as u64,
+    );
 
     queue.submit(Some(encoder.finish()));
 
